@@ -1,7 +1,7 @@
 #![allow(dead_code)]
 #![allow(nonstandard_style)]
 
-use crate::{math, mesh_trait::MeshDesc};
+use crate::{math, base_mesh_trait::MeshDesc};
 
 
 

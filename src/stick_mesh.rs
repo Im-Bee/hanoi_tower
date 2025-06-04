@@ -1,4 +1,4 @@
-use crate::{math, mesh_trait::{self, MeshFactory}};
+use crate::{math, base_mesh_trait::{self, MeshFactory}};
 
 
 
@@ -10,46 +10,9 @@ extern crate shader_version;
 
 
 
-
-gfx_vertex_struct!( 
-    Vertex 
-    {
-        a_pos:       [f32; 4] = "a_pos",
-        a_tex_coord: [f32; 2] = "a_tex_coord",
-    }
-);
-
-impl Vertex 
-{
-    fn new(pos: [f32; 3], tc: [f32; 2]) -> Vertex 
-    {
-        Vertex {
-            a_pos: [pos[0], pos[1], pos[2], 1.],
-            a_tex_coord: tc,
-        }
-    }
-}
-
-gfx_pipeline!( 
-    pipe 
-    {
-        vbuf:              gfx::VertexBuffer<Vertex>                     = (),
-        u_model_view_proj: gfx::Global<[[f32; 4]; 4]>                    = "u_model_view_proj",
-        t_color:           gfx::TextureSampler<[f32; 4]>                 = "t_color",
-        out_color:         gfx::RenderTarget<::gfx::format::Srgba8>      = "o_Color",
-        out_depth:         gfx::DepthTarget<::gfx::format::DepthStencil> = gfx::preset::depth::LESS_EQUAL_WRITE,
-    }
-);
-
-
-
-
 pub struct StickMeshFactory
 {
 }
-
-
-
 
 impl StickMeshFactory 
 {
@@ -61,24 +24,22 @@ impl StickMeshFactory
 }
 
 
-impl mesh_trait::IntoDesc for StickMeshFactory
+impl crate::base_mesh_trait::IntoDesc for StickMeshFactory
 {
-    fn into_desc(&self) -> mesh_trait::MeshDesc 
+    fn into_desc(&self) -> base_mesh_trait::MeshDesc 
     {
-        mesh_trait::MeshDesc { 
+        base_mesh_trait::MeshDesc { 
             desc: ([ 0., 0., 0., 0. ]),
         }
     }
 }
 
 
-impl MeshFactory<Vertex, pipe::Init<'static>> for StickMeshFactory 
+impl MeshFactory for StickMeshFactory 
 {
     fn create_mesh_instance_on_gpu(&self,
                                    open_gl: &glutin_window::OpenGL,
-                                   factory: &mut gfx_device_gl::Factory) -> crate::mesh_trait::MeshOnGpu<
-                                                                              Vertex,
-                                                                              pipe::Init<'static>>
+                                   factory: &mut gfx_device_gl::Factory) -> crate::base_mesh_trait::BasicMeshOnGpu
     {
         let mut vertex_data = Vec::new();
         let mut index_data = Vec::new();
@@ -104,7 +65,7 @@ impl MeshFactory<Vertex, pipe::Init<'static>> for StickMeshFactory
                 let u = j as f32 / segments as f32;
                 let v = i as f32 / height_segments as f32;
 
-                vertex_data.push(Vertex::new([x, y, z], [u, v]));
+                vertex_data.push(base_mesh_trait::Vertex::new([x, y, z], [u, v]));
             }
         }
 
@@ -124,11 +85,11 @@ impl MeshFactory<Vertex, pipe::Init<'static>> for StickMeshFactory
             }
         }
 
-        mesh_trait::MeshOnGpu::new_from_vertices(open_gl, 
-                                                 factory,
-                                                 pipe::new(),
-                                                 &vertex_data,
-                                                 &index_data)
+        base_mesh_trait::BasicMeshOnGpu::new_from_vertices(open_gl, 
+                                                      factory,
+                                                      base_mesh_trait::pipe::new(),
+                                                      &vertex_data,
+                                                      &index_data)
     }
 }
 

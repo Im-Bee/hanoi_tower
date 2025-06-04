@@ -1,4 +1,4 @@
-use crate::{actor_trait::ActorBase, mesh_trait::{MeshDesc, MeshFactory}, stick_mesh::*};
+use crate::{actor_trait::ActorBase, base_mesh_trait::{MeshDesc, MeshFactory}, stick_mesh::*};
 use camera_controllers::{
     model_view_projection
 };
@@ -13,8 +13,8 @@ extern crate shader_version;
 
 
 
-type Vertex = pipe::Data<gfx_device_gl::Resources>;
-type Pipe = pipe::Init<'static>;
+type Vertex = crate::base_mesh_trait::pipe::Data<gfx_device_gl::Resources>;
+type Pipe = crate::base_mesh_trait::pipe::Init<'static>;
 
 pub struct AStick
 {
@@ -35,10 +35,10 @@ impl crate::actor_trait::Actor for AStick
         let stick_mesh = StickMeshFactory::new();
 
         let mesh = stick_mesh.create_mesh_instance_on_gpu(open_gl, factory);
-        let mesh_data = pipe::Data {
+        let mesh_data = crate::base_mesh_trait::pipe::Data {
             vbuf: mesh.vbuf,
             u_model_view_proj: vecmath::mat4_id(),
-            t_color: (mesh.texture_view, mesh.sampler),
+            t_color: mesh.color,
             out_color: window.output_color.clone(),
             out_depth: window.output_stencil.clone(),
         };

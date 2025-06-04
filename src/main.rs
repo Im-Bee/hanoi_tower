@@ -1,5 +1,5 @@
-use camera_controllers::{Camera, FirstPerson, FirstPersonSettings};
-mod mesh_trait;
+use camera_controllers::{FirstPerson, FirstPersonSettings};
+mod base_mesh_trait;
 mod actor_trait;
 mod donut_mesh;
 mod donut_actor;
@@ -49,15 +49,18 @@ fn main()
     let mut projection = get_projection(&window);
 
 
-
+    let donuts_amount = 6;
     let mut game_master = game_master::GameMaster::new();
-    game_master.initialize(&opengl, &window, &mut factory);
-    let mut first_person = FirstPerson::new(
+    game_master.initialize(donuts_amount, &opengl, &window, &mut factory);
+
+
+    let mut first_person_camera = FirstPerson::new(
         [0.5, 10.5, 21.0],
         FirstPersonSettings::keyboard_wasd()
     );
+    first_person_camera.pitch = 0.25;
 
-    first_person.pitch = 0.25;
+
 
     while let Some(e) = window.next() 
     {
@@ -72,7 +75,7 @@ fn main()
             window.encoder.clear_depth(&window.output_stencil, 1.0);
 
 
-            game_master.render(window, &first_person.camera(args.ext_dt).orthogonal(), projection);
+            game_master.render(window, &first_person_camera.camera(args.ext_dt).orthogonal(), projection);
         });
 
         if e.resize_args().is_some() 

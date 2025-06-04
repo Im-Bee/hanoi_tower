@@ -1,4 +1,4 @@
-use crate::{actor_trait::ActorBase, donut_mesh::DonutMeshFactory, mesh_trait::{MeshDesc, MeshFactory}};
+use crate::{actor_trait::ActorBase, donut_mesh::DonutMeshFactory, base_mesh_trait::{MeshDesc, MeshFactory}};
 use camera_controllers::{
     model_view_projection
 };
@@ -18,8 +18,8 @@ extern crate shader_version;
 
 
 
-type Vertex = crate::donut_mesh::pipe::Data<gfx_device_gl::Resources>;
-type Pipe = crate::donut_mesh::pipe::Init<'static>;
+type Vertex = crate::base_mesh_trait::pipe::Data<gfx_device_gl::Resources>;
+type Pipe = crate::base_mesh_trait::pipe::Init<'static>;
 
 pub struct ADonut
 {
@@ -41,10 +41,10 @@ impl crate::actor_trait::Actor for ADonut
         let donut_mesh = DonutMeshFactory::new(mesh_desc.desc[0], mesh_desc.desc[1]);
 
         let mesh = donut_mesh.create_mesh_instance_on_gpu(open_gl, factory);
-        let mesh_data = crate::donut_mesh::pipe::Data {
+        let mesh_data = crate::base_mesh_trait::pipe::Data {
             vbuf: mesh.vbuf,
             u_model_view_proj: vecmath::mat4_id(),
-            t_color: (mesh.texture_view, mesh.sampler),
+            t_color: mesh.color,
             out_color: window.output_color.clone(),
             out_depth: window.output_stencil.clone(),
         };

@@ -7,7 +7,7 @@ use crate::{
     actor_trait::{self, Actor}, 
     donut_actor::ADonut,
     donut_mesh::DonutMeshFactory,
-    mesh_trait::IntoDesc,
+    base_mesh_trait::IntoDesc,
     stick_actor::AStick,
     stick_mesh::StickMeshFactory
 };
@@ -25,6 +25,10 @@ pub struct GameMaster
 
     button_choice_1: Option<Key>,
     button_choice_2: Option<Key>,
+
+    dounuts_amount: isize,
+
+    playing: bool,
 }
 
 
@@ -37,6 +41,7 @@ fn call_on_stack<F, ACTOR: actor_trait::Actor>(mut f: F, stack: &mut Stack<ACTOR
     }
 }
 
+
 fn convert_key_to_i32(key: Key) -> i32
 {
     key.code() - '1' as i32
@@ -48,7 +53,7 @@ const GROUND_OFFSET: f32 = -6.;
 const POS_FAR_STICK: f32 = -12.;
 const POS_CLOSE_STICK: f32 = -10.;
 const DISTANCE_BETWEEN_STICKS: f32 = 15.;
-const DONUT_HEIGHT: f32 = 0.82;
+const DONUT_HEIGHT: f32 = 0.6;
 
 
 impl GameMaster 
@@ -64,14 +69,23 @@ impl GameMaster
 
             button_choice_1: None,
             button_choice_2: None,
+
+            dounuts_amount: -1,
+
+            playing: true,
         }
     }
 
     pub fn initialize(&mut self,
-                      open_gl: &glutin_window::OpenGL, 
-                      window: &piston_window::PistonWindow,
-                      factory: &mut gfx_device_gl::Factory)
+                      dounuts_amount: isize,
+                      open_gl:        &glutin_window::OpenGL, 
+                      window:         &piston_window::PistonWindow,
+                      factory:        &mut gfx_device_gl::Factory)
     {
+        self.dounuts_amount = dounuts_amount;
+
+
+
         let stick_factory = StickMeshFactory {};
 
         let mut stick = AStick::initialize(stick_factory.into_desc(), open_gl, window, factory);
@@ -90,25 +104,28 @@ impl GameMaster
         <AStick as Actor>::set_position(&mut stick.actor_base, [ DISTANCE_BETWEEN_STICKS, 1.0, POS_FAR_STICK ]);
         self.sticks.push(stick);
 
-        let max_i = 12;
-        let donut_factory = DonutMeshFactory {
-            major_radius: 0.5,
-            minor_radius: 0.35,
-            segments_major: 28,
-            segments_minor: 16,
-        };
+
+
+        let max_i = self.dounuts_amount;
 
         for i in 0..max_i
         {
+            let i_diff = max_i - i;
+
+            let donut_factory = DonutMeshFactory {
+                major_radius: 0.40 + (i_diff as f32 * 0.2),
+                minor_radius: 0.35, 
+                segments_major: 28,
+                segments_minor: 16,
+            };
+
 
             let mut donut = ADonut::initialize(donut_factory.into_desc(), open_gl, window, factory);
             let offset = DONUT_HEIGHT * self.stack_one.len() as f32 + GROUND_OFFSET;
-            let scale = (max_i - i) as f32 * POS_SCALE + 1.;
 
-            <ADonut as Actor>::set_scale(&mut donut.actor_base, [ scale, 1.45, scale ]);
             <ADonut as Actor>::rotate_x(&mut donut.actor_base, std::f32::consts::PI * 0.5);
             <ADonut as Actor>::set_position(&mut donut.actor_base, [ -DISTANCE_BETWEEN_STICKS, offset, POS_FAR_STICK ]);
-            donut.donut_width = max_i - i;
+            donut.donut_width = (max_i - i) as i32;
 
             self.stack_one.push(donut);
         }
@@ -116,6 +133,12 @@ impl GameMaster
 
     pub fn update(&mut self, button: Option<Button>) 
     {
+        if !self.playing {
+            return
+        }
+
+
+
         if let Some(Button::Keyboard(key)) = button
         {
             match key 
@@ -131,6 +154,15 @@ impl GameMaster
         call_on_stack(| actor: &mut ADonut | -> () { actor.update() }, &mut self.stack_two);
         call_on_stack(| actor: &mut ADonut | -> () { actor.update() }, &mut self.stack_three);
         call_on_stack(| actor: &mut AStick | -> () { actor.update() }, &mut self.sticks);
+
+
+
+
+        if self.check_win_condition() {
+            self.playing = false;
+
+            println!("You won!");
+        }
     }
 
     pub fn render(&mut self,
@@ -174,18 +206,29 @@ impl GameMaster
         self.button_choice_2 = None;
     }
 
+        
+    fn check_win_condition(&mut self) -> bool
+    {
+        let third_stack = self.get_stack(2);
     
+
+        if third_stack.len() >= self.dounuts_amount as usize {
+            return true
+        }
+
+        false
+    }
+    
+
     fn check_if_move_possible(&mut self) -> bool
     {
         let index_a = convert_key_to_i32(self.button_choice_1.unwrap());
-        let stack_a = self.get_stack(index_a);
-        if stack_a.is_empty() {
+        if self.get_stack(index_a).is_empty() {
             return false
         }
 
         let index_b = convert_key_to_i32(self.button_choice_2.unwrap());
-        let stack_b = self.get_stack(index_b);
-        if stack_b.is_empty() {
+        if self.get_stack(index_b).is_empty() {
             return true
         }
 
