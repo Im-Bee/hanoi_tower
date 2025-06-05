@@ -56,8 +56,6 @@ impl Anmiator
         let pos = <ADonut as Actor>::get_pos(&mut self.animated.clone().unwrap().borrow());
         let target = self.target_pos.unwrap();
 
-        println!("{:?}, {:?}", pos, target);
-        
         if !(pos[0] - 0.1 < target[0] && target[0] < pos[0] + 0.1) {
             return false
         }
@@ -88,7 +86,8 @@ impl Anmiator
 
         <ADonut as Actor>::move_position(&mut base.borrow_mut(), pos_diff);
 
-        if self.check_if_on_pos() {
+        if self.check_if_on_pos() 
+        {
             self.is_in_animation = false;
             self.animated = None;
             self.target_pos = None;

@@ -1,5 +1,7 @@
 #![allow(dead_code)]
 
+use std::{collections::VecDeque, isize, usize};
+
 use piston::{Button, Key};
 use vecmath::Matrix4;
 
@@ -29,9 +31,12 @@ pub struct GameMaster
     button_choice_1: Option<Key>,
     button_choice_2: Option<Key>,
 
-    dounuts_amount: isize,
+    dounuts_amount: i32,
 
     playing: bool,
+
+    auto_gamer_moves: VecDeque<AutoGameMove>,
+    auto_gamer: bool,
 }
 
 
@@ -59,6 +64,14 @@ const DISTANCE_BETWEEN_STICKS: f32 = 15.;
 const DONUT_HEIGHT: f32 = 0.6;
 
 
+struct AutoGameMove 
+{
+    from: u32,
+    to: u32,
+}
+
+
+
 impl GameMaster
 {
     pub fn new() -> Self
@@ -78,11 +91,17 @@ impl GameMaster
             dounuts_amount: -1,
 
             playing: true,
+
+
+            auto_gamer_moves: VecDeque::new(),
+            auto_gamer: false,
         }
     }
 
+
+   
     pub fn initialize(&mut self,
-                      dounuts_amount: isize,
+                      dounuts_amount: i32,
                       open_gl:        &glutin_window::OpenGL, 
                       window:         &piston_window::PistonWindow,
                       factory:        &mut gfx_device_gl::Factory)
@@ -93,47 +112,30 @@ impl GameMaster
 
         let stick_factory = StickMeshFactory {};
 
-        let mut stick = AStick::initialize(stick_factory.into_desc(), open_gl, window, factory);
+        let stick = AStick::initialize(stick_factory.into_desc(), open_gl, window, factory);
         <AStick as Actor>::rotate_x(&mut stick.actor_base.borrow_mut(), std::f32::consts::PI * 0.5);
-        <AStick as Actor>::set_position(&mut stick.actor_base.borrow_mut(), [ -DISTANCE_BETWEEN_STICKS, 1.0, POS_FAR_STICK ]);
+        <AStick as Actor>::set_position(&mut stick.actor_base.borrow_mut(), 
+                                        [ -DISTANCE_BETWEEN_STICKS, 1.0, POS_FAR_STICK ]);
+
         self.sticks.push(stick);
 
 
-        let mut stick = AStick::initialize(stick_factory.into_desc(), open_gl, window, factory);
+        let stick = AStick::initialize(stick_factory.into_desc(), open_gl, window, factory);
         <AStick as Actor>::rotate_x(&mut stick.actor_base.borrow_mut(), std::f32::consts::PI * 0.5);
-        <AStick as Actor>::set_position(&mut stick.actor_base.borrow_mut(), [ 0., 1., POS_CLOSE_STICK ]);
+        <AStick as Actor>::set_position(&mut stick.actor_base.borrow_mut(),
+                                        [ 0., 1., POS_CLOSE_STICK ]);
+
         self.sticks.push(stick);
 
-        let mut stick = AStick::initialize(stick_factory.into_desc(), open_gl, window, factory);
+        let stick = AStick::initialize(stick_factory.into_desc(), open_gl, window, factory);
         <AStick as Actor>::rotate_x(&mut stick.actor_base.borrow_mut(), std::f32::consts::PI * 0.5);
-        <AStick as Actor>::set_position(&mut stick.actor_base.borrow_mut(), [ DISTANCE_BETWEEN_STICKS, 1.0, POS_FAR_STICK ]);
+        <AStick as Actor>::set_position(&mut stick.actor_base.borrow_mut(),
+                                        [ DISTANCE_BETWEEN_STICKS, 1.0, POS_FAR_STICK ]);
+
         self.sticks.push(stick);
 
 
-
-        let max_i = self.dounuts_amount;
-
-        for i in 0..max_i
-        {
-            let i_diff = max_i - i;
-
-            let donut_factory = DonutMeshFactory {
-                major_radius: 0.40 + (i_diff as f32 * 0.2),
-                minor_radius: 0.35, 
-                segments_major: 28,
-                segments_minor: 16,
-            };
-
-
-            let mut donut = ADonut::initialize(donut_factory.into_desc(), open_gl, window, factory);
-            let offset = DONUT_HEIGHT * self.stack_one.len() as f32 + GROUND_OFFSET;
-
-            <ADonut as Actor>::rotate_x(&mut donut.actor_base.borrow_mut(), std::f32::consts::PI * 0.5);
-            <ADonut as Actor>::set_position(&mut donut.actor_base.borrow_mut(), [ -DISTANCE_BETWEEN_STICKS, offset, POS_FAR_STICK ]);
-            donut.donut_width = (max_i - i) as i32;
-
-            self.stack_one.push(donut);
-        }
+        self.generate_donuts(open_gl, window, factory); 
     }
 
     pub fn update(&mut self, button: Option<Button>) 
@@ -142,35 +144,45 @@ impl GameMaster
             return
         }
 
+
         call_on_stack(| actor: &mut ADonut | -> () { actor.update() }, &mut self.stack_one);
         call_on_stack(| actor: &mut ADonut | -> () { actor.update() }, &mut self.stack_two);
         call_on_stack(| actor: &mut ADonut | -> () { actor.update() }, &mut self.stack_three);
         call_on_stack(| actor: &mut AStick | -> () { actor.update() }, &mut self.sticks);
-
     
         if self.animator.is_in_animation() {
             self.animator.update();
             return;
         }
 
+        if self.check_win_condition() {
+            self.playing = false;
+
+            println!("You won!");
+        }
+
+        if self.auto_gamer {
+            self.auto_game();
+            return;
+        }
 
         if let Some(Button::Keyboard(key)) = button
         {
             match key 
             {
                 Key::D1 | Key::D2 | Key::D3 => { self.start_donut_routine(key); },
+                Key::A => {
+
+
+
+                    self.auto_gamer = true;
+                },
                 _ => ()
             }
 
             // println!("Pressed keyboard key '{:?}'", key);
         };
 
-
-        if self.check_win_condition() {
-            self.playing = false;
-
-            println!("You won!");
-        }
     }
 
     pub fn render(&mut self,
@@ -207,15 +219,9 @@ impl GameMaster
                       &mut self.sticks);
     }
 
+ 
 
-    fn flush_choices(&mut self) 
-    {
-        self.button_choice_1 = None;
-        self.button_choice_2 = None;
-    }
-
-        
-    fn check_win_condition(&mut self) -> bool
+    pub fn check_win_condition(&mut self) -> bool
     {
         let third_stack = self.get_stack(2);
     
@@ -226,7 +232,49 @@ impl GameMaster
 
         false
     }
-    
+
+
+
+    fn generate_donuts(&mut self, 
+                       open_gl: &glutin_window::OpenGL, 
+                       window:  &piston_window::PistonWindow,
+                       factory: &mut gfx_device_gl::Factory)
+    {
+        let max_i = self.dounuts_amount;
+
+        for i in 0..max_i
+        {
+            let i_diff = max_i - i;
+
+            let donut_factory = DonutMeshFactory {
+                major_radius: 0.40 + (i_diff as f32 * 0.2),
+                minor_radius: 0.35, 
+                segments_major: 28,
+                segments_minor: 16,
+            };
+
+
+            let mut donut = ADonut::initialize(donut_factory.into_desc(), open_gl, window, factory);
+            let offset = DONUT_HEIGHT * self.stack_one.len() as f32 + GROUND_OFFSET;
+
+            <ADonut as Actor>::rotate_x(&mut donut.actor_base.borrow_mut(), std::f32::consts::PI * 0.5);
+            <ADonut as Actor>::set_position(&mut donut.actor_base.borrow_mut(), 
+                                            [ -DISTANCE_BETWEEN_STICKS, offset, POS_FAR_STICK ]);
+            donut.donut_width = (max_i - i) as i32;
+
+            self.stack_one.push(donut);
+        }
+    }
+
+
+
+    fn flush_choices(&mut self) 
+    {
+        self.button_choice_1 = None;
+        self.button_choice_2 = None;
+    }
+ 
+
 
     fn check_if_move_possible(&mut self) -> bool
     {
@@ -247,6 +295,7 @@ impl GameMaster
         true
     }
 
+
     
     fn get_stack(&mut self, index: i32) -> &mut Stack<ADonut>
     {
@@ -260,6 +309,7 @@ impl GameMaster
     }
 
     
+
     fn finish_donut_routinge(&mut self) 
     {
         let index_a = convert_key_to_i32(self.button_choice_1.unwrap());
@@ -284,14 +334,11 @@ impl GameMaster
                                         z ]);
 
 
-        // <ADonut as Actor>::set_position(&mut donut.actor_base, [ distance,
-        //                                                          DONUT_HEIGHT * stack.len() as f32 + GROUND_OFFSET, 
-        //                                                          z ]);
-
         self.get_stack(index_b).push(donut);
     }
 
     
+
     fn start_donut_routine(&mut self, button: Key)
     {
         if self.button_choice_1.is_none() {
@@ -317,6 +364,35 @@ impl GameMaster
         self.finish_donut_routinge();
         self.flush_choices();
     }
+
+
+
+    fn generate_auto_gamer_moves(&mut self)
+    {
+        generate_moves(&mut self.auto_gamer_moves, self.dounuts_amount, 0, 2, 1);
+    }
+
+
+
+    fn auto_game(&mut self) 
+    {
+        if self.auto_gamer_moves.is_empty() {
+            self.generate_auto_gamer_moves();
+        }
+
+        let game_move = self.auto_gamer_moves.pop_front().unwrap();
+        self.button_choice_1 = Some(Key::from('1' as u32 + game_move.from));
+        self.start_donut_routine(Key::from('1' as u32 + game_move.to));
+    }
 }
 
+fn generate_moves(target: &mut VecDeque<AutoGameMove>, n: i32, from: u32, to: u32, aux: u32)
+{
+    if n == 0 {
+        return;
+    }
 
+    generate_moves(target, n - 1, from, aux, to);
+    target.push_back(AutoGameMove { from: (from), to: (to) });
+    generate_moves(target, n - 1, aux, to, from);
+}
