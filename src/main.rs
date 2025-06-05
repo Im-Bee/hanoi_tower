@@ -17,8 +17,20 @@ extern crate freetype as ft;
 extern crate gfx;
 extern crate shader_version;
 
-
+#[cfg(feature = "include_sdl2")]
+extern crate sdl2_window;
 #[cfg(feature = "include_glfw")]
+extern crate glfw_window;
+#[cfg(feature = "include_glutin")]
+extern crate glutin_window;
+
+#[cfg(feature = "include_sdl2")]
+use sdl2_window::Sdl2Window as AppWindow;
+#[cfg(feature = "include_glfw")]
+use glfw_window::GlfwWindow as AppWindow;
+#[cfg(feature = "include_glutin")]
+use glutin_window::GlutinWindow as AppWindow;
+
 use opengl_graphics::{ GlGraphics, Texture, TextureSettings};
 use graphics::{Context, Graphics, ImageSize};
 

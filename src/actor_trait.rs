@@ -72,7 +72,7 @@ fn add_angle_with_overflow(a: &mut f32, b: f32)
 pub trait Actor
 {
     fn initialize(mesh_desc: MeshDesc,
-                  open_gl:   &glutin_window::OpenGL, 
+                  open_gl:   &crate::piston_window::OpenGL, 
                   window:    &piston_window::PistonWindow,
                   factory:   &mut gfx_device_gl::Factory) -> Self;
 

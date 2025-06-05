@@ -36,7 +36,7 @@ pub struct ADonut
 impl crate::actor_trait::Actor for ADonut
 {
     fn initialize(mesh_desc: MeshDesc,
-                  open_gl:   &glutin_window::OpenGL, 
+                  open_gl:   &crate::piston_window::OpenGL, 
                   window:    &piston_window::PistonWindow,
                   factory:   &mut gfx_device_gl::Factory) -> Self
     {

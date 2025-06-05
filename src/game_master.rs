@@ -102,7 +102,7 @@ impl GameMaster
    
     pub fn initialize(&mut self,
                       dounuts_amount: i32,
-                      open_gl:        &glutin_window::OpenGL, 
+                      open_gl:        &crate::piston_window::OpenGL, 
                       window:         &piston_window::PistonWindow,
                       factory:        &mut gfx_device_gl::Factory)
     {
@@ -236,7 +236,7 @@ impl GameMaster
 
 
     fn generate_donuts(&mut self, 
-                       open_gl: &glutin_window::OpenGL, 
+                       open_gl: &crate::piston_window::OpenGL, 
                        window:  &piston_window::PistonWindow,
                        factory: &mut gfx_device_gl::Factory)
     {

@@ -49,7 +49,7 @@ impl base_mesh_trait::IntoDesc for DonutMeshFactory
 impl crate::base_mesh_trait::MeshFactory for DonutMeshFactory 
 {
     fn create_mesh_instance_on_gpu(&self,
-                                   open_gl: &glutin_window::OpenGL,
+                                   open_gl: &crate::piston_window::OpenGL,
                                    factory: &mut gfx_device_gl::Factory) -> crate::base_mesh_trait::BasicMeshOnGpu
     {
         let major_radius = self.major_radius;

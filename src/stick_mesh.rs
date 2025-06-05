@@ -38,7 +38,7 @@ impl crate::base_mesh_trait::IntoDesc for StickMeshFactory
 impl MeshFactory for StickMeshFactory 
 {
     fn create_mesh_instance_on_gpu(&self,
-                                   open_gl: &glutin_window::OpenGL,
+                                   open_gl: &crate::piston_window::OpenGL,
                                    factory: &mut gfx_device_gl::Factory) -> crate::base_mesh_trait::BasicMeshOnGpu
     {
         let mut vertex_data = Vec::new();

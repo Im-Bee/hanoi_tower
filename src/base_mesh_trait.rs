@@ -65,7 +65,7 @@ pub struct BasicMeshOnGpu
 
 impl BasicMeshOnGpu
 {
-    pub fn new_from_vertices(open_gl:       &glutin_window::OpenGL,
+    pub fn new_from_vertices(open_gl:       &crate::piston_window::OpenGL,
                              factory:       &mut gfx_device_gl::Factory,
                              pipe:          pipe::Init,
                              vertex_buffer: &Vec::<Vertex>,
@@ -118,6 +118,6 @@ pub trait IntoDesc
 pub trait MeshFactory
 {
     fn create_mesh_instance_on_gpu(&self, 
-                                   open_gl: &glutin_window::OpenGL,
+                                   open_gl: &crate::piston_window::OpenGL,
                                    factory: &mut gfx_device_gl::Factory) -> BasicMeshOnGpu;
 }

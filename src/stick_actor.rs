@@ -30,7 +30,7 @@ pub struct AStick
 impl crate::actor_trait::Actor for AStick
 {
     fn initialize(_mesh_desc: MeshDesc,
-                  open_gl:   &glutin_window::OpenGL, 
+                  open_gl:   &crate::piston_window::OpenGL, 
                   window:    &piston_window::PistonWindow,
                   factory:   &mut gfx_device_gl::Factory) -> Self
     {
