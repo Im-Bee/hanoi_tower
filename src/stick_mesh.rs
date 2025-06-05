@@ -62,10 +62,7 @@ impl MeshFactory for StickMeshFactory
                 let x = radius * cos_theta;
                 let y = radius * sin_theta;
 
-                let u = j as f32 / segments as f32;
-                let v = i as f32 / height_segments as f32;
-
-                vertex_data.push(base_mesh_trait::Vertex::new([x, y, z], [u, v]));
+                vertex_data.push(base_mesh_trait::Vertex::new([x, y, z]));
             }
         }
 

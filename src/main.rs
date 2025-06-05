@@ -7,6 +7,7 @@ mod stick_mesh;
 mod stick_actor;
 mod math;
 mod game_master;
+mod animator;
 
 extern crate piston_window;
 extern crate vecmath;

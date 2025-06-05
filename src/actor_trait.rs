@@ -1,8 +1,10 @@
 #![allow(dead_code)]
 #![allow(nonstandard_style)]
 
-use crate::{math, base_mesh_trait::MeshDesc};
-
+use crate::{
+    math,
+    base_mesh_trait::MeshDesc
+};
 
 
 pub struct ActorBase<PIPE_DATA, PIPE: gfx::pso::PipelineInit>
@@ -82,9 +84,15 @@ pub trait Actor
     }
 
 
+    fn get_pos<PIPE_DATA, PIPE: gfx::pso::PipelineInit>(base: &ActorBase<PIPE_DATA, PIPE>) -> vecmath::Vector3<f32>
+    {
+        base.positon
+    }
+
+
 
     fn move_position<PIPE_DATA, PIPE: gfx::pso::PipelineInit>(base: &mut ActorBase<PIPE_DATA, PIPE>, 
-                                                              pos: vecmath::Vector3<f32>)  
+                                                              pos:  vecmath::Vector3<f32>)  
     {
         base.positon[0] += pos[0];
         base.positon[1] += pos[1];

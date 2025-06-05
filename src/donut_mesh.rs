@@ -76,10 +76,7 @@ impl crate::base_mesh_trait::MeshFactory for DonutMeshFactory
                 let y = (major_radius + minor_radius * cos_phi) * sin_theta;
                 let z = minor_radius * sin_phi;
 
-                let u = i as f32 / segments_major as f32;
-                let v = j as f32 / segments_minor as f32;
-
-                vertex_data.push(base_mesh_trait::Vertex::new([x, y, z], [u, v]));
+                vertex_data.push(base_mesh_trait::Vertex::new([x, y, z]));
             }
         }
 

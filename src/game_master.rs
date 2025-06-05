@@ -4,10 +4,11 @@ use piston::{Button, Key};
 use vecmath::Matrix4;
 
 use crate::{
-    actor_trait::{self, Actor}, 
+    actor_trait::{self, Actor},
+    animator::Anmiator,
+    base_mesh_trait::IntoDesc,
     donut_actor::ADonut,
     donut_mesh::DonutMeshFactory,
-    base_mesh_trait::IntoDesc,
     stick_actor::AStick,
     stick_mesh::StickMeshFactory
 };
@@ -15,8 +16,10 @@ use crate::{
 
 type Stack<T> = Vec<T>;
 
-pub struct GameMaster 
+pub struct GameMaster
 {
+    animator: Anmiator,
+
     stack_one: Stack<ADonut>,
     stack_two: Stack<ADonut>,
     stack_three: Stack<ADonut>,
@@ -56,11 +59,13 @@ const DISTANCE_BETWEEN_STICKS: f32 = 15.;
 const DONUT_HEIGHT: f32 = 0.6;
 
 
-impl GameMaster 
+impl GameMaster
 {
     pub fn new() -> Self
     {
         GameMaster {  
+            animator: Anmiator::new(),
+
             stack_one: Stack::new(),
             stack_two: Stack::new(),
             stack_three: Stack::new(),
@@ -89,19 +94,19 @@ impl GameMaster
         let stick_factory = StickMeshFactory {};
 
         let mut stick = AStick::initialize(stick_factory.into_desc(), open_gl, window, factory);
-        <AStick as Actor>::rotate_x(&mut stick.actor_base, std::f32::consts::PI * 0.5);
-        <AStick as Actor>::set_position(&mut stick.actor_base, [ -DISTANCE_BETWEEN_STICKS, 1.0, POS_FAR_STICK ]);
+        <AStick as Actor>::rotate_x(&mut stick.actor_base.borrow_mut(), std::f32::consts::PI * 0.5);
+        <AStick as Actor>::set_position(&mut stick.actor_base.borrow_mut(), [ -DISTANCE_BETWEEN_STICKS, 1.0, POS_FAR_STICK ]);
         self.sticks.push(stick);
 
 
         let mut stick = AStick::initialize(stick_factory.into_desc(), open_gl, window, factory);
-        <AStick as Actor>::rotate_x(&mut stick.actor_base, std::f32::consts::PI * 0.5);
-        <AStick as Actor>::set_position(&mut stick.actor_base, [ 0., 1., POS_CLOSE_STICK ]);
+        <AStick as Actor>::rotate_x(&mut stick.actor_base.borrow_mut(), std::f32::consts::PI * 0.5);
+        <AStick as Actor>::set_position(&mut stick.actor_base.borrow_mut(), [ 0., 1., POS_CLOSE_STICK ]);
         self.sticks.push(stick);
 
         let mut stick = AStick::initialize(stick_factory.into_desc(), open_gl, window, factory);
-        <AStick as Actor>::rotate_x(&mut stick.actor_base, std::f32::consts::PI * 0.5);
-        <AStick as Actor>::set_position(&mut stick.actor_base, [ DISTANCE_BETWEEN_STICKS, 1.0, POS_FAR_STICK ]);
+        <AStick as Actor>::rotate_x(&mut stick.actor_base.borrow_mut(), std::f32::consts::PI * 0.5);
+        <AStick as Actor>::set_position(&mut stick.actor_base.borrow_mut(), [ DISTANCE_BETWEEN_STICKS, 1.0, POS_FAR_STICK ]);
         self.sticks.push(stick);
 
 
@@ -123,8 +128,8 @@ impl GameMaster
             let mut donut = ADonut::initialize(donut_factory.into_desc(), open_gl, window, factory);
             let offset = DONUT_HEIGHT * self.stack_one.len() as f32 + GROUND_OFFSET;
 
-            <ADonut as Actor>::rotate_x(&mut donut.actor_base, std::f32::consts::PI * 0.5);
-            <ADonut as Actor>::set_position(&mut donut.actor_base, [ -DISTANCE_BETWEEN_STICKS, offset, POS_FAR_STICK ]);
+            <ADonut as Actor>::rotate_x(&mut donut.actor_base.borrow_mut(), std::f32::consts::PI * 0.5);
+            <ADonut as Actor>::set_position(&mut donut.actor_base.borrow_mut(), [ -DISTANCE_BETWEEN_STICKS, offset, POS_FAR_STICK ]);
             donut.donut_width = (max_i - i) as i32;
 
             self.stack_one.push(donut);
@@ -137,6 +142,16 @@ impl GameMaster
             return
         }
 
+        call_on_stack(| actor: &mut ADonut | -> () { actor.update() }, &mut self.stack_one);
+        call_on_stack(| actor: &mut ADonut | -> () { actor.update() }, &mut self.stack_two);
+        call_on_stack(| actor: &mut ADonut | -> () { actor.update() }, &mut self.stack_three);
+        call_on_stack(| actor: &mut AStick | -> () { actor.update() }, &mut self.sticks);
+
+    
+        if self.animator.is_in_animation() {
+            self.animator.update();
+            return;
+        }
 
 
         if let Some(Button::Keyboard(key)) = button
@@ -149,13 +164,6 @@ impl GameMaster
 
             // println!("Pressed keyboard key '{:?}'", key);
         };
-
-        call_on_stack(| actor: &mut ADonut | -> () { actor.update() }, &mut self.stack_one);
-        call_on_stack(| actor: &mut ADonut | -> () { actor.update() }, &mut self.stack_two);
-        call_on_stack(| actor: &mut ADonut | -> () { actor.update() }, &mut self.stack_three);
-        call_on_stack(| actor: &mut AStick | -> () { actor.update() }, &mut self.sticks);
-
-
 
 
         if self.check_win_condition() {
@@ -258,19 +266,29 @@ impl GameMaster
         let index_b = convert_key_to_i32(self.button_choice_2.unwrap());
         let distance = DISTANCE_BETWEEN_STICKS * index_b as f32 - DISTANCE_BETWEEN_STICKS;
 
-        let mut donut = self.get_stack(index_a).pop().unwrap();
-        let stack = self.get_stack(index_b);
+        let donut = self.get_stack(index_a).pop().unwrap();
+        let stack_len = self.get_stack(index_b).len();
         let mut z = POS_FAR_STICK;
 
         if index_b == 1 {
             z = POS_CLOSE_STICK;
         }
-    
-        <ADonut as Actor>::set_position(&mut donut.actor_base, [ distance,
-                                                                 DONUT_HEIGHT * stack.len() as f32 + GROUND_OFFSET, 
-                                                                 z ]);
 
-        stack.push(donut);
+        let starting_pos = <ADonut as Actor>::get_pos(&donut.actor_base.borrow());
+    
+        
+        self.animator.queue_animation(donut.actor_base.clone(), 
+                                      starting_pos,
+                                      [ distance,                                          
+                                        DONUT_HEIGHT * stack_len as f32 + GROUND_OFFSET, 
+                                        z ]);
+
+
+        // <ADonut as Actor>::set_position(&mut donut.actor_base, [ distance,
+        //                                                          DONUT_HEIGHT * stack.len() as f32 + GROUND_OFFSET, 
+        //                                                          z ]);
+
+        self.get_stack(index_b).push(donut);
     }
 
     

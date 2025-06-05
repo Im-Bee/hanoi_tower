@@ -1,3 +1,5 @@
+use std::rc::Rc;
+use std::cell::RefCell;
 use crate::{actor_trait::ActorBase, donut_mesh::DonutMeshFactory, base_mesh_trait::{MeshDesc, MeshFactory}};
 use camera_controllers::{
     model_view_projection
@@ -23,7 +25,7 @@ type Pipe = crate::base_mesh_trait::pipe::Init<'static>;
 
 pub struct ADonut
 {
-    pub actor_base: crate::actor_trait::ActorBase<Vertex, Pipe>,
+    pub actor_base: Rc<RefCell<ActorBase<Vertex, Pipe>>>,
     pub donut_width: i32,
 }
 
@@ -50,7 +52,7 @@ impl crate::actor_trait::Actor for ADonut
         };
         
         ADonut { 
-            actor_base: (ActorBase::new(mesh_data, mesh.slice, mesh.pso)),
+            actor_base: (Rc::new(RefCell::new(ActorBase::new(mesh_data, mesh.slice, mesh.pso)))),
             donut_width: 0,
         }
     }
@@ -59,15 +61,15 @@ impl crate::actor_trait::Actor for ADonut
 
     fn resize(&mut self, window: &mut piston_window::PistonWindow)
     {
-        self.actor_base.mesh_data.out_depth = window.output_stencil.clone();
-        self.actor_base.mesh_data.out_color = window.output_color.clone();
+        self.actor_base.borrow_mut().mesh_data.out_depth = window.output_stencil.clone();
+        self.actor_base.borrow_mut().mesh_data.out_color = window.output_color.clone();
     }
  
 
 
     fn update(&mut self)
     {
-        Self::update_actor_base(&mut self.actor_base);
+        Self::update_actor_base(&mut self.actor_base.borrow_mut());
     }
 
 
@@ -77,10 +79,13 @@ impl crate::actor_trait::Actor for ADonut
               camera:     &Matrix4<f32>,
               projection: &vecmath::Matrix4<f32>) 
     {
-        self.actor_base.mesh_data.u_model_view_proj = model_view_projection(ADonut::get_model(&self.actor_base),
-                                                                            *camera,
-                                                                            *projection);
+        let model = ADonut::get_model(&self.actor_base.borrow());
+        self.actor_base.borrow_mut().mesh_data.u_model_view_proj = model_view_projection(model,
+                                                                                         *camera,
+                                                                                         *projection);
 
-        window.encoder.draw(&self.actor_base.slice, &self.actor_base.pso, &self.actor_base.mesh_data);
+        window.encoder.draw(&self.actor_base.borrow().slice,
+                            &self.actor_base.borrow().pso,
+                            &self.actor_base.borrow().mesh_data);
     }
 }

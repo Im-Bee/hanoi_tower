@@ -29,7 +29,7 @@ gfx_vertex_struct!(
 
 impl Vertex 
 {
-    pub fn new(pos: [f32; 3], _: [f32; 2]) -> Vertex 
+    pub fn new(pos: [f32; 3]) -> Vertex 
     {
         Vertex {
             a_pos: [pos[0], pos[1], pos[2], 1.],
